@@ -1,8 +1,11 @@
-const express = require('express');
+const express = require("express");
 var app = express();
-const morgan =require ('morgan');
-const bodyparser = require(body-parser);
-const mongoose require(mongoose);
+//use() - middleware stack
+app.use((req, res, next) => {
+  res.status(200).json({
+    message: "It works",
+  });
+});
 
 
-
+module.exports = app;
