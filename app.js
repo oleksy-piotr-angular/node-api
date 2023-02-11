@@ -6,6 +6,7 @@ const mongoose = require('mongoose');//Package to handle MongoDB Connection
 
 //Import Routes and set to Expression
 const taskRoutes = require('./api/routes/tasks');
+const userRoutes = require('./api/routes/user');
 
 mongoose.set('strictQuery', false);//[MONGOOSE] DeprecationWarning: Mongoose: the `strictQuery` option will be switched back to `false` by default in Mongoose 7
 mongoose.connect('mongodb+srv://tasks-manager:'+process.env.MONGO_ATLAS_PASS+'@angulartasks.ot2tz.mongodb.net/?retryWrites=true&w=majority');
@@ -33,8 +34,9 @@ app.use(logger('dev'));
 app.use(bodyParser.urlencoded({extended: false}));//only simple bodies
 app.use(bodyParser.json());//want json to be used.
 
-//use() - middleware stack
+//use() - middleware stack | handle Routes here
 app.use('/tasks', taskRoutes);
+app.use('/user', userRoutes);
 
 //handling ERRORS
 app.use((req, res, next) => {
