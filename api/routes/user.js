@@ -3,6 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt'); //Add bcrypt to password encryption
 const jwt = require('jsonwebtoken'); // Add JWT to keep information between client and server(token will be save in MongoDB but will be overwrite each time that user will be login [we use it because session are not possible in this API because RESTful API is stateless]) that user is log in
+const checkAuth = require('../middleware/check-auth');//we need Authorize if we want to remove user by himself
 
 const User = require('../models/user');
 
@@ -67,7 +68,7 @@ router.post('/login', (req, res, next) => {
       if (user.length < 1) {
         //we received array so we check if it's empty
         return res.status(401).json({
-          //HTTP Status means  "Unauthorized response"
+          //HTTP Status means  "Unauthorized response status code indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource."
           message: 'Auth fails',
         });
       } else {
@@ -113,7 +114,7 @@ router.post('/login', (req, res, next) => {
 });
 
 //delete
-router.delete('/:userId', (req, res, next) => {
+router.delete('/:userId', checkAuth, (req, res, next) => {
   User.find({ _id: req.params.userId })
     .exec() /* thanks this method we can use Promise methods */
     .then((user) => {
