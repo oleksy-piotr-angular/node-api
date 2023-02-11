@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcrypt'); //Add bcrypt to password encryption
+const jwt = require('jsonwebtoken'); // Add JWT to keep information between client and server(token will be save in MongoDB but will be overwrite each time that user will be login [we use it because session are not possible in this API because RESTful API is stateless]) that user is log in
 
 const User = require('../models/user');
 
@@ -58,9 +59,63 @@ router.post('/signup', (req, res, next) => {
     });
 });
 
+//login
+router.post('/login', (req, res, next) => {
+  User.find({ email: req.body.email })
+    .exec() /* thanks this method we can use Promise methods */
+    .then((user) => {
+      if (user.length < 1) {
+        //we received array so we check if it's empty
+        return res.status(401).json({
+          //HTTP Status means  "Unauthorized response"
+          message: 'Auth fails',
+        });
+      } else {
+        //check if taken password from body and hash from storage compare each other
+        bcrypt.compare(req.body.password, user[0].password, (err, result) => {
+          if (err) {
+            // we get if comparison generally fails | if it was not compared  we not receive this error
+            return res.status(401).json({
+              //HTTP Status means  "Unauthorized response"
+              message: 'Auth failed',
+            });
+          }
+          if (result) {
+            //if we not have an error and hash was compered successfully we log in
+            const token = jwt.sign(
+              {
+                email: user[0].email,
+                userId: user[0]._id,
+              },
+              process.env.JWT_KEY,
+              { expiresIn: '1h' }
+            );
+            /**
+             *above JWT will store encrypted information about Log In Session | create Token
+             * process.env.JWT_KEY - is stored in "nodemon.json" file
+             */
+            return res.status(200).json({
+              message: 'Auth successful',
+              sessionToken: token,
+            });
+          }
+          res.status(401).json({
+            // we respond if password was incorrect
+            message: 'Auth failed',
+          });
+        });
+      }
+    })
+    .catch((err) => {
+      //catch an error when we try to find Id to Log In
+      message: 'Auth failed';
+    });
+});
+
 //delete
 router.delete('/:userId', (req, res, next) => {
-  User.find({_id: req.params.userId})
+  User.find({ _id: req.params.userId })
+    .exec() /* thanks this method we can use Promise methods */
     .then((user) => {
       if (user.length >= 1) {
         User.deleteOne({
@@ -74,13 +129,15 @@ router.delete('/:userId', (req, res, next) => {
           })
           .catch((err) => {
             console.log(err);
-            res.status(500).json({//HTTP Status means "Internal Server Error"
+            res.status(500).json({
+              //HTTP Status means "Internal Server Error"
               error: err,
             });
           });
-      }else {
-        return res.status(404).json({//HTTP Status means "Not Found"
-          message: 'Cannot remove - User not found'
+      } else {
+        return res.status(404).json({
+          //HTTP Status means "Not Found"
+          message: 'Cannot remove - User not found',
         });
       }
     })
