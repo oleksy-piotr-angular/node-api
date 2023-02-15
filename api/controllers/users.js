@@ -1,14 +1,10 @@
-const express = require('express');
-const router = express.Router();
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt'); //Add bcrypt to password encryption
 const jwt = require('jsonwebtoken'); // Add JWT to keep information between client and server(token will be save in MongoDB but will be overwrite each time that user will be login [we use it because session are not possible in this API because RESTful API is stateless]) that user is log in
-const checkAuth = require('../middleware/check-auth');//we need Authorize if we want to remove user by himself
 
 const User = require('../models/user');
 
-//create account
-router.post('/signup', (req, res, next) => {
+exports.user_signup = (req, res, next) => {
   const saltRound = 10; // cost factor.(more hashing more rounds)
 
   User.find({ email: req.body.email }) /* check if email not exist in storage */
@@ -58,10 +54,9 @@ router.post('/signup', (req, res, next) => {
         });
       }
     });
-});
+};
 
-//login
-router.post('/login', (req, res, next) => {
+exports.user_login = (req, res, next) => {
   User.find({ email: req.body.email })
     .exec() /* thanks this method we can use Promise methods */
     .then((user) => {
@@ -111,16 +106,15 @@ router.post('/login', (req, res, next) => {
       //catch an error when we try to find Id to Log In
       message: 'Auth failed';
     });
-});
+};
 
-//delete
-router.delete('/:userId', checkAuth, (req, res, next) => {
-  User.find({ _id: req.params.userId })
+exports.user_delete = (req, res, next) => {
+  User.find({ _id: req.userData.userId })
     .exec() /* thanks this method we can use Promise methods */
     .then((user) => {
       if (user.length >= 1) {
         User.deleteOne({
-          _id: req.params.userId,
+          _id: req.userData.userId,
         })
           .exec() // Return a promise to use then(), catch() methods
           .then((result) => {
@@ -150,6 +144,4 @@ router.delete('/:userId', checkAuth, (req, res, next) => {
         error: err,
       });
     });
-});
-
-module.exports = router;
+};
